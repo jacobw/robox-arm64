@@ -1,0 +1,144 @@
+{
+  "variables": {
+    "box_version": "{{env `VERSION`}}"
+  },
+  "provisioners": [
+    {
+      "type": "shell",
+      "timeout": "120m",
+      "scripts": [
+        "scripts/fedora35/fixdns.sh",
+        "scripts/fedora35/hostname.sh",
+        "scripts/fedora35/dnf.sh"
+      ],
+      "start_retry_timeout": "15m",
+      "expect_disconnect": "true",
+      "only": [
+        "generic-fedora35-arm64-vmware"
+      ]
+    },
+    {
+      "type": "shell",
+      "timeout": "120m",
+      "scripts": [
+        "scripts/fedora35/base.sh"
+      ],
+      "pause_before": "120s",
+      "start_retry_timeout": "15m",
+      "expect_disconnect": "true",
+      "only": [
+        "generic-fedora35-arm64-vmware"
+      ]
+    },
+    {
+      "type": "shell",
+      "timeout": "120m",
+      "scripts": [
+        "scripts/fedora35/kernel.sh",
+        "scripts/fedora35/updatedb.sh",
+        "scripts/fedora35/vga.sh",
+        "scripts/fedora35/fixtmp.sh",
+        "scripts/fedora35/virtualbox.sh",
+        "scripts/fedora35/parallels.sh",
+        "scripts/fedora35/vmware.sh",
+        "scripts/fedora35/qemu.sh",
+        "scripts/fedora35/vagrant.sh",
+        "scripts/fedora35/tuning.sh"
+      ],
+      "pause_before": "120s",
+      "start_retry_timeout": "15m",
+      "expect_disconnect": "true",
+      "only": [
+        "generic-fedora35-arm64-vmware"
+      ]
+    }
+  ],
+  "builders": [
+    {
+      "type": "vmware-iso",
+      "name": "generic-fedora35-arm64-vmware",
+      "vm_name": "generic-fedora35-arm64-vmware",
+      "vmdk_name": "generic-fedora35-arm64-vmware",
+      "output_directory": "output/generic-fedora35-arm64-vmware",
+      "boot_wait": "20s",
+      "boot_keygroup_interval": "1s",
+      "boot_command": [
+        "<up>e",
+        "<down><down><end><spacebar>",
+        "inst.ks=http://{{.HTTPIP}}:{{.HTTPPort}}/generic.fedora35.arm64.vagrant.ks ",
+        "<leftCtrlOn>x<leftCtrlOff>"
+      ],
+      "disk_size": 131072,
+      "disk_adapter_type": "nvme",
+      "disk_type_id": "0",
+      "cpus": 2,
+      "memory": 2048,
+      "version": "19",
+      "usb": true,
+      "vmx_data_post": {
+        "virtualhw.version": "19",
+        "cleanShutdown": "TRUE",
+        "softPowerOff": "FALSE",
+        "ethernet0.virtualDev": "e1000",
+        "ethernet0.startConnected": "TRUE",
+        "ethernet0.wakeonpcktrcv": "false"
+      },
+      "guest_os_type": "arm-fedora-64",
+      "skip_compaction": false,
+      "http_directory": "http",
+      "headless": true,
+      "vnc_disable_password": true,
+      "vnc_bind_address": "127.0.0.1",
+      "vmx_remove_ethernet_interfaces": true,
+      "iso_url": "https://download.fedoraproject.org/pub/fedora/linux/releases/35/Server/aarch64/iso/Fedora-Server-netinst-aarch64-35-1.2.iso",
+      "iso_checksum": "7a70e82bd8902a749f1616722a30b96c838b109baccaee5f19870fa6eb55aa22",
+      "ssh_username": "root",
+      "ssh_password": "vagrant",
+      "ssh_port": 22,
+      "ssh_timeout": "3600s",
+      "shutdown_command": "echo 'vagrant' | sudo -S shutdown -P now"
+    }
+  ],
+  "post-processors": [
+    [
+      {
+        "type": "vagrant",
+        "compression_level": 9,
+        "keep_input_artifact": false,
+        "vagrantfile_template": "tpl/generic-{{split build_name \"-\" 1}}.rb",
+        "output": "output/generic-{{split build_name \"-\" 1}}-{{split build_name \"-\" 2}}-{{user `box_version`}}.box",
+        "include": [
+          "tpl/generic/info.json"
+        ]
+      },
+      {
+        "type": "checksum",
+        "checksum_types": [
+          "sha256"
+        ],
+        "keep_input_artifact": false,
+        "output": "output/generic-{{split build_name \"-\" 1}}-{{split build_name \"-\" 2}}-{{user `box_version`}}.box.sha256"
+      }
+    ],
+    [
+      {
+        "type": "vagrant",
+        "compression_level": 9,
+        "keep_input_artifact": false,
+        "vagrantfile_template": "tpl/roboxes-{{split build_name \"-\" 1}}.rb",
+        "output": "output/roboxes-{{split build_name \"-\" 1}}-{{split build_name \"-\" 2}}-{{user `box_version`}}.box",
+        "include": [
+          "tpl/roboxes/info.json"
+        ]
+      },
+      {
+        "type": "checksum",
+        "checksum_types": [
+          "sha256"
+        ],
+        "keep_input_artifact": false,
+        "output": "output/roboxes-{{split build_name \"-\" 1}}-{{split build_name \"-\" 2}}-{{user `box_version`}}.box.sha256"
+      }
+    ]
+  ]
+}
